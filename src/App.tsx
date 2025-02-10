@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import OpenAI from 'openai';
 import { ChatMessage } from './components/ChatMessage';
 import { ChatInput } from './components/ChatInput';
 import { Message, ChatState } from './types';
@@ -13,16 +12,8 @@ function App() {
   });
 
   const handleSend = async (content: string) => {
-    if (!process.env.VITE_OPENAI_API_KEY) {
-      setState(prev => ({
-        ...prev,
-        error: 'OpenAI API key not configured. Please add VITE_OPENAI_API_KEY to your environment variables.',
-      }));
-      return;
-    }
-
     const newMessage: Message = { role: 'user', content };
-    
+
     setState(prev => ({
       ...prev,
       messages: [...prev.messages, newMessage],
@@ -31,22 +22,24 @@ function App() {
     }));
 
     try {
-      const openai = new OpenAI({
-        apiKey: process.env.VITE_OPENAI_API_KEY,
-        dangerouslyAllowBrowser: true,
+      // Call your backend server instead of OpenAI directly
+      const response = await fetch('https://ai-text-api.onrender.com/api/recruit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt: content }),
       });
 
-      const response = await openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
-        messages: [...state.messages, newMessage].map(({ role, content }) => ({
-          role,
-          content,
-        })),
-      });
+      if (!response.ok) {
+        throw new Error('Failed to get response from the server');
+      }
+
+      const data = await response.json();
 
       const assistantMessage: Message = {
         role: 'assistant',
-        content: response.choices[0].message.content || 'No response',
+        content: data.response || 'No response',
       };
 
       setState(prev => ({
@@ -54,11 +47,11 @@ function App() {
         messages: [...prev.messages, newMessage, assistantMessage],
         isLoading: false,
       }));
-    } catch (error) {
+    } catch {
       setState(prev => ({
         ...prev,
         isLoading: false,
-        error: 'Failed to get response from OpenAI',
+        error: 'Failed to get response from the server',
       }));
     }
   };
