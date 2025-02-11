@@ -16,13 +16,11 @@ function App() {
 
     setState(prev => ({
       ...prev,
-      messages: [...prev.messages, newMessage],
       isLoading: true,
       error: null,
     }));
 
     try {
-      // Call your backend server instead of OpenAI directly
       const response = await fetch('https://ai-text-api.onrender.com/api/recruit', {
         method: 'POST',
         headers: {
@@ -76,8 +74,9 @@ function App() {
               <ChatMessage key={index} message={message} />
             ))}
             {state.isLoading && (
-              <div className="flex justify-center">
+              <div className="flex flex-col items-center gap-2">
                 <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
+                <p className="text-gray-500">Thinking...</p>
               </div>
             )}
           </div>
